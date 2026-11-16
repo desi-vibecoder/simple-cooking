@@ -778,11 +778,11 @@ export interface AccentPreset {
 }
 
 export const ACCENT_PRESETS: AccentPreset[] = [
+  { id: 'cobalt', name: 'Indigo Flame', hex: '#3B82F6' },
   { id: 'ember', name: 'Saffron Ember', hex: '#EA580C' },
   { id: 'turmeric', name: 'Turmeric Gold', hex: '#D97706' },
   { id: 'crimson', name: 'Kashmiri Chilli', hex: '#E11D48' },
   { id: 'curry', name: 'Curry Leaf', hex: '#10B981' },
-  { id: 'cobalt', name: 'Indigo Flame', hex: '#3B82F6' },
   { id: 'violet', name: 'Cardamom Violet', hex: '#8B5CF6' },
 ];
 

@@ -1,8 +1,10 @@
-name: Deploy TadkaFlow to GitHub Pages
+name: Deploy simple-cooking to GitHub Pages
 
 on:
   push:
     branches: ['main', 'master']
+    paths-ignore:
+      - '.aistudio/**'
   workflow_dispatch:
 
 permissions:
@@ -21,17 +23,22 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Remove .aistudio directory if present
+        run: rm -rf .aistudio
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
-      - name: Build static site with relative base
+      - name: Build static site for GitHub Pages
         run: npm run build
+
+      - name: Ensure .nojekyll is present in dist
+        run: touch ./dist/.nojekyll
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

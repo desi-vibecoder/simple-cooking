@@ -49,9 +49,9 @@ export default function App() {
 
   // Dark theme by default; configurable in Gear Settings
   const [isDark, setIsDark] = useState<boolean>(true);
-  // Dynamic accent color; configurable via presets or Nerd Section #code
-  const [accentHex, setAccentHex] = useState<string>('#EA580C');
-  const [customHexInput, setCustomHexInput] = useState<string>('#EA580C');
+  // Dynamic accent color (default: Indigo #3B82F6); configurable via presets or Nerd Section #code
+  const [accentHex, setAccentHex] = useState<string>('#3B82F6');
+  const [customHexInput, setCustomHexInput] = useState<string>('#3B82F6');
   const [hexError, setHexError] = useState<string>('');
   const [settingsOpen, setSettingsOpen] = useState<boolean>(false);
 
