@@ -1,0 +1,6 @@
+{
+  "name": "TadkaFlow — Universal Indian Cooking Guide",
+  "description": "Step-by-step interactive Indian cooking companion with guided timers, lid reminders, ingredient & technique photography, and sound-activated hands-free kitchen controls.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
