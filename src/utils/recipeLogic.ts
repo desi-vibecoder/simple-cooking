@@ -802,3 +802,30 @@ export function normalizeHexColor(input: string): string | null {
   return null;
 }
 
+export function resolveGitHubRepoUrl(
+  envRepoUrl?: string,
+  hostname?: string,
+  pathname?: string
+): string {
+  if (envRepoUrl && /^https?:\/\/github\.com\/[^/]+\/[^/]+/.test(envRepoUrl.trim())) {
+    return envRepoUrl.trim().replace(/\/+$/, '');
+  }
+
+  const host = (hostname ?? (typeof window !== 'undefined' ? window.location.hostname : '')).toLowerCase();
+  const path = pathname ?? (typeof window !== 'undefined' ? window.location.pathname : '');
+
+  if (host.endsWith('.github.io')) {
+    const owner = host.replace(/\.github\.io$/, '');
+    const segments = path.split('/').filter(Boolean);
+    if (owner && segments.length > 0) {
+      return `https://github.com/${owner}/${segments[0]}`;
+    }
+    if (owner) {
+      return `https://github.com/${owner}/simple-cooking`;
+    }
+  }
+
+  return 'https://github.com/desi-vibecoder/simple-cooking';
+}
+
+

@@ -34,6 +34,7 @@ import {
   formatHumanDuration,
   computeWallClockRemaining,
   getLidReminderState,
+  resolveGitHubRepoUrl,
 } from './utils/recipeLogic';
 import { kitchenAudio } from './utils/kitchenAudio';
 import { StepPanScene } from './components/StepPanScene';
@@ -371,6 +372,7 @@ export default function App() {
   const totalRemainingSecs = calculateRemainingTimeSeconds(steps, currentStepIdx, remainingSeconds);
   const lidConfirmed = !!lidConfirmedSteps[currentStep.id];
   const lidReminder = getLidReminderState(currentStep);
+  const githubRepoUrl = resolveGitHubRepoUrl(import.meta.env.VITE_GITHUB_REPO_URL);
 
   return (
     <div className="h-dvh max-h-dvh w-full overflow-hidden flex flex-col bg-[#FAF7F2] dark:bg-[#0F0D0C] text-[#1C1613] dark:text-[#F5EFE6] transition-colors">
@@ -401,11 +403,11 @@ export default function App() {
         {/* Right Controls: GitHub Link (left of speaker) + Speaker Button + Gear Settings Icon */}
         <div className="flex items-center gap-1.5 shrink-0">
           <a
-            href="https://github.com/vivekmasaram/simple-cooking"
+            href={githubRepoUrl}
             target="_blank"
             rel="noopener noreferrer"
             aria-label="GitHub repository"
-            title="View simple-cooking on GitHub"
+            title="View deployed GitHub repository"
             data-testid="github-link"
             className="min-h-[36px] min-w-[36px] rounded-xl border border-stone-300 dark:border-stone-800 bg-stone-100 dark:bg-stone-900 hover:bg-stone-200 dark:hover:bg-stone-800 flex items-center justify-center text-stone-700 dark:text-stone-300 transition-colors"
           >

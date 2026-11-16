@@ -14,6 +14,7 @@ import {
   detectClapSpike,
   ACCENT_PRESETS,
   normalizeHexColor,
+  resolveGitHubRepoUrl,
 } from './recipeLogic';
 
 test('all ingredients and steps use clear English names', () => {
@@ -130,4 +131,21 @@ test('normalizeHexColor validates 3-digit and 6-digit hex codes for Nerd Section
   assert.equal(normalizeHexColor('invalid-hex'), null);
   assert.equal(normalizeHexColor('#12345'), null);
 });
+
+test('resolveGitHubRepoUrl detects deployed GitHub repository from env or github.io host', () => {
+  assert.equal(
+    resolveGitHubRepoUrl(),
+    'https://github.com/desi-vibecoder/simple-cooking'
+  );
+  assert.equal(
+    resolveGitHubRepoUrl('https://github.com/desi-vibecoder/simple-cooking/'),
+    'https://github.com/desi-vibecoder/simple-cooking'
+  );
+  assert.equal(
+    resolveGitHubRepoUrl('', 'desi-vibecoder.github.io', '/simple-cooking/index.html'),
+    'https://github.com/desi-vibecoder/simple-cooking'
+  );
+});
+
+
 

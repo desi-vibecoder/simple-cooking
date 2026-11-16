@@ -35,6 +35,8 @@ jobs:
         run: npm install --legacy-peer-deps
 
       - name: Build static site for GitHub Pages
+        env:
+          VITE_GITHUB_REPO_URL: ${{ github.server_url }}/${{ github.repository }}
         run: npm run build
 
       - name: Ensure .nojekyll is present in dist
