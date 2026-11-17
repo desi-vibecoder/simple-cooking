@@ -108,21 +108,30 @@
   45% { transform: translateY(-7px) scale(1.18); }
 }
 
-.anim-flame-high { animation: pan-flame-high 0.75s ease-in-out infinite; transform-origin: bottom center; }
-.anim-flame-low { animation: pan-flame-low 1.2s ease-in-out infinite; transform-origin: bottom center; }
-.anim-hand-sprinkle { animation: hand-sprinkle 1.3s ease-in-out infinite; transform-origin: right center; }
-.anim-particle-1 { animation: particle-fall 1.05s ease-in infinite; }
-.anim-particle-2 { animation: particle-fall 1.05s ease-in 0.32s infinite; }
-.anim-particle-3 { animation: particle-fall 1.05s ease-in 0.64s infinite; }
-.anim-stream { animation: liquid-stream 0.9s ease-in-out infinite; transform-origin: top center; }
-.anim-spatula { animation: spatula-stir 1.25s ease-in-out infinite; transform-origin: top center; }
-.anim-lid-lower { animation: lid-lower 2.1s cubic-bezier(0.16, 1, 0.3, 1) infinite; }
-.anim-lid-lift { animation: lid-lift 2.1s cubic-bezier(0.16, 1, 0.3, 1) infinite; }
-.anim-steam-1 { animation: steam-wisp 1.8s ease-out infinite; }
-.anim-steam-2 { animation: steam-wisp 1.8s ease-out 0.6s infinite; }
-.anim-steam-3 { animation: steam-wisp 1.8s ease-out 1.2s infinite; }
-.anim-shimmer { animation: oil-shimmer 1.4s ease-in-out infinite; transform-origin: center; }
-.anim-sizzle { animation: sizzle-pop 0.85s ease-in-out infinite; transform-origin: center; }
+.anim-flame-high { animation: pan-flame-high 0.75s ease-in-out infinite; transform-box: fill-box; transform-origin: bottom center; }
+.anim-flame-low { animation: pan-flame-low 1.2s ease-in-out infinite; transform-box: fill-box; transform-origin: bottom center; }
+.anim-hand-sprinkle { animation: hand-sprinkle 1.3s ease-in-out infinite; transform-box: fill-box; transform-origin: right center; }
+.anim-particle-1 { animation: particle-fall 1.05s ease-in infinite; transform-box: fill-box; transform-origin: center; }
+.anim-particle-2 { animation: particle-fall 1.05s ease-in 0.32s infinite; transform-box: fill-box; transform-origin: center; }
+.anim-particle-3 { animation: particle-fall 1.05s ease-in 0.64s infinite; transform-box: fill-box; transform-origin: center; }
+.anim-stream { animation: liquid-stream 0.9s ease-in-out infinite; transform-box: fill-box; transform-origin: top center; }
+.anim-spatula { animation: spatula-stir 1.25s ease-in-out infinite; transform-box: fill-box; transform-origin: top center; }
+.anim-lid-lower { animation: lid-lower 2.1s cubic-bezier(0.16, 1, 0.3, 1) infinite; transform-box: fill-box; }
+.anim-lid-lift { animation: lid-lift 2.1s cubic-bezier(0.16, 1, 0.3, 1) infinite; transform-box: fill-box; }
+.anim-steam-1 { animation: steam-wisp 1.8s ease-out infinite; transform-box: fill-box; }
+.anim-steam-2 { animation: steam-wisp 1.8s ease-out 0.6s infinite; transform-box: fill-box; }
+.anim-steam-3 { animation: steam-wisp 1.8s ease-out 1.2s infinite; transform-box: fill-box; }
+.anim-shimmer { animation: oil-shimmer 1.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.anim-sizzle { animation: sizzle-pop 0.85s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+
+@keyframes android-toast-in {
+  0% { opacity: 0; transform: translate(-50%, 8px) scale(0.96); }
+  100% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+}
+
+.anim-android-toast {
+  animation: android-toast-in 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .anim-flame-high,
@@ -139,7 +148,8 @@
   .anim-steam-2,
   .anim-steam-3,
   .anim-shimmer,
-  .anim-sizzle {
+  .anim-sizzle,
+  .anim-android-toast {
     animation: none;
   }
 }

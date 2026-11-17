@@ -264,10 +264,20 @@ export default function App() {
       const clampedIdx = Math.max(0, Math.min(index, steps.length - 1));
       setCurrentStepIdx(clampedIdx);
       setRemainingSeconds(steps[clampedIdx].timerSeconds);
+
+      if (typeof window !== 'undefined') {
+        const nextState = { appView: 'preview' as AppViewMode, stepIdx: clampedIdx, settingsOpen: false };
+        if (viewMode === 'home') {
+          window.history.pushState(nextState, '', '#step-preview');
+        } else {
+          window.history.replaceState(nextState, '', '#step-preview');
+        }
+      }
+
       setViewMode('preview');
       kitchenAudio.playStepConfirmTone();
     },
-    [steps, dismissAlarm]
+    [steps, dismissAlarm, viewMode]
   );
 
   // Start or advance in Active Cook Mode (with real-time timer)
@@ -280,6 +290,16 @@ export default function App() {
       const clampedIdx = Math.max(0, Math.min(newIndex, steps.length - 1));
       const targetStep = steps[clampedIdx];
       setCurrentStepIdx(clampedIdx);
+
+      if (typeof window !== 'undefined') {
+        const nextState = { appView: 'cooking' as AppViewMode, stepIdx: clampedIdx, settingsOpen: false };
+        if (viewMode === 'home') {
+          window.history.pushState(nextState, '', '#cooking');
+        } else {
+          window.history.replaceState(nextState, '', '#cooking');
+        }
+      }
+
       setViewMode('cooking');
 
       if (autoStartTimer && targetStep.timerSeconds > 0) {
@@ -300,8 +320,91 @@ export default function App() {
         kitchenAudio.playStepConfirmTone();
       }
     },
-    [steps, dismissAlarm]
+    [steps, dismissAlarm, viewMode]
   );
+
+  const handleReturnHome = useCallback(() => {
+    dismissAlarm();
+    pauseRealTimeTimer();
+    setSettingsOpen(false);
+    setViewMode('home');
+
+    if (typeof window !== 'undefined') {
+      if (window.history.state?.appView && window.history.state.appView !== 'home') {
+        window.history.back();
+      } else {
+        const baseUrl = window.location.pathname + window.location.search;
+        window.history.replaceState({ appView: 'home', stepIdx: 0, settingsOpen: false }, '', baseUrl);
+      }
+    }
+  }, [dismissAlarm, pauseRealTimeTimer]);
+
+  const handleOpenSettings = useCallback(() => {
+    setSettingsOpen(true);
+    if (typeof window !== 'undefined' && !window.history.state?.settingsOpen) {
+      window.history.pushState(
+        { appView: viewMode, stepIdx: currentStepIdx, settingsOpen: true },
+        '',
+        '#settings'
+      );
+    }
+  }, [viewMode, currentStepIdx]);
+
+  const handleCloseSettings = useCallback(() => {
+    setSettingsOpen(false);
+    if (typeof window !== 'undefined' && window.history.state?.settingsOpen) {
+      window.history.back();
+    }
+  }, []);
+
+  // Handle Android / browser Back button (popstate) so pressing Back inside a step preview or cooking screen returns to Home instead of exiting the site
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    if (!window.history.state || !window.history.state.appView) {
+      const baseUrl = window.location.pathname + window.location.search;
+      window.history.replaceState(
+        { appView: viewMode, stepIdx: currentStepIdx, settingsOpen: false },
+        '',
+        baseUrl
+      );
+    }
+
+    const handlePopState = (event: PopStateEvent) => {
+      const state = event.state as
+        | { appView?: AppViewMode; stepIdx?: number; settingsOpen?: boolean }
+        | null;
+
+      if (state?.settingsOpen) {
+        setSettingsOpen(true);
+        return;
+      }
+
+      setSettingsOpen(false);
+
+      if (state?.appView === 'preview') {
+        dismissAlarm();
+        pauseRealTimeTimer();
+        const idx = typeof state.stepIdx === 'number' ? state.stepIdx : 0;
+        const clamped = Math.max(0, Math.min(idx, steps.length - 1));
+        setCurrentStepIdx(clamped);
+        setRemainingSeconds(steps[clamped]?.timerSeconds ?? 0);
+        setViewMode('preview');
+      } else if (state?.appView === 'cooking') {
+        const idx = typeof state.stepIdx === 'number' ? state.stepIdx : 0;
+        const clamped = Math.max(0, Math.min(idx, steps.length - 1));
+        setCurrentStepIdx(clamped);
+        setViewMode('cooking');
+      } else {
+        dismissAlarm();
+        pauseRealTimeTimer();
+        setViewMode('home');
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [viewMode, currentStepIdx, steps, dismissAlarm, pauseRealTimeTimer]);
 
   const handleNextStep = useCallback(() => {
     dismissAlarm();
@@ -328,16 +431,9 @@ export default function App() {
         selectCookingStep(currentStepIdx - 1, false);
       }
     } else {
-      pauseRealTimeTimer();
-      setViewMode('home');
+      handleReturnHome();
     }
-  }, [currentStepIdx, viewMode, openStepPreview, selectCookingStep, pauseRealTimeTimer, dismissAlarm]);
-
-  const handleReturnHome = () => {
-    dismissAlarm();
-    pauseRealTimeTimer();
-    setViewMode('home');
-  };
+  }, [currentStepIdx, viewMode, openStepPreview, selectCookingStep, handleReturnHome, dismissAlarm]);
 
   const handleToggleMute = () => {
     const nextMuted = !audioMuted;
@@ -354,13 +450,42 @@ export default function App() {
     setRemainingSeconds(0);
   };
 
+  const [androidToast, setAndroidToast] = useState<{
+    id: number;
+    message: string;
+    included: boolean;
+  } | null>(null);
+  const toastTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current !== null) {
+        window.clearTimeout(toastTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const handleToggleTomato = () => {
     dismissAlarm();
-    setConfig((prev) => ({ ...prev, includeTomato: !prev.includeTomato }));
+    const nextIncludeTomato = !config.includeTomato;
+    setConfig((prev) => ({ ...prev, includeTomato: nextIncludeTomato }));
     setCurrentStepIdx(0);
     setTimerRunning(false);
     endTimeMsRef.current = null;
     setRemainingSeconds(0);
+
+    if (toastTimeoutRef.current !== null) {
+      window.clearTimeout(toastTimeoutRef.current);
+    }
+    setAndroidToast({
+      id: Date.now(),
+      message: nextIncludeTomato ? 'Added tomato' : 'Removed tomato',
+      included: nextIncludeTomato,
+    });
+    toastTimeoutRef.current = window.setTimeout(() => {
+      setAndroidToast(null);
+      toastTimeoutRef.current = null;
+    }, 2200);
   };
 
   const stepIngredients = useMemo(
@@ -432,7 +557,7 @@ export default function App() {
 
           <button
             type="button"
-            onClick={() => setSettingsOpen(true)}
+            onClick={handleOpenSettings}
             aria-label="Open settings"
             data-testid="settings-gear-btn"
             className="min-h-[36px] min-w-[36px] px-2.5 py-1 rounded-xl border border-stone-300 dark:border-stone-800 bg-stone-100 dark:bg-stone-900 hover:bg-stone-200 dark:hover:bg-stone-800 text-[#1C1613] dark:text-[#F5EFE6] flex items-center justify-center gap-1.5 transition-colors shrink-0"
@@ -451,7 +576,7 @@ export default function App() {
           data-testid="settings-modal"
           className="fixed inset-0 z-50 bg-black/65 backdrop-blur-xs flex items-center justify-center p-4"
           onClick={(e) => {
-            if (e.target === e.currentTarget) setSettingsOpen(false);
+            if (e.target === e.currentTarget) handleCloseSettings();
           }}
         >
           <div className="w-full max-w-sm rounded-2xl border border-stone-200 dark:border-stone-800 bg-[#FAF7F2] dark:bg-[#171412] p-4 space-y-4 shadow-2xl">
@@ -464,7 +589,7 @@ export default function App() {
               </div>
               <button
                 type="button"
-                onClick={() => setSettingsOpen(false)}
+                onClick={handleCloseSettings}
                 aria-label="Close settings"
                 data-testid="close-settings-btn"
                 className="min-h-[32px] min-w-[32px] rounded-lg bg-stone-200/70 dark:bg-stone-800 flex items-center justify-center text-stone-600 dark:text-stone-300"
@@ -649,19 +774,54 @@ export default function App() {
                   aria-pressed={config.includeTomato}
                   title={config.includeTomato ? 'Tomato included' : 'No tomato'}
                   data-testid="tomato-toggle-btn"
-                  className={`min-h-[36px] min-w-[42px] px-2.5 py-1 rounded-xl border flex items-center justify-center transition-all shrink-0 ${
+                  className={`h-9 min-w-[44px] px-2.5 rounded-xl border flex items-center justify-center shrink-0 select-none [-webkit-tap-highlight-color:transparent] ${
                     config.includeTomato
-                      ? 'border-red-500/45 bg-red-500/15 shadow-xs'
+                      ? 'border-red-500/45 bg-red-500/15'
                       : 'border-stone-300 dark:border-stone-800 bg-stone-100/60 dark:bg-stone-900/60'
                   }`}
                 >
                   <span
                     data-testid="tomato-emoji"
-                    className={`text-base leading-none transition-all select-none ${
-                      config.includeTomato ? 'grayscale-0 opacity-100 scale-105' : 'grayscale opacity-35 scale-95'
+                    className={`inline-flex items-center justify-center w-6 h-6 select-none ${
+                      config.includeTomato ? 'opacity-100' : 'opacity-40'
                     }`}
                   >
-                    🍅
+                    <svg
+                      viewBox="0 0 24 24"
+                      className="w-5 h-5 block overflow-visible"
+                      aria-hidden="true"
+                    >
+                      {/* Plump tomato body with generous bottom clearance inside 24x24 viewBox */}
+                      <ellipse
+                        cx="12"
+                        cy="13.5"
+                        rx="7.5"
+                        ry="6.5"
+                        fill={config.includeTomato ? '#EF4444' : '#78716C'}
+                      />
+                      {/* Subtle bottom-right shading curve */}
+                      <path
+                        d="M17.2 9.5C18.2 10.7 18.6 12.2 18.3 13.8C17.8 16.8 14.9 18.9 11.4 18.9C9.8 18.9 8.3 18.4 7.2 17.6C8.6 19.1 10.8 20 13.2 19.8C16.9 19.5 19.5 16.7 19.5 13.5C19.5 11.9 18.6 10.5 17.2 9.5Z"
+                        fill={config.includeTomato ? '#DC2626' : '#57534E'}
+                      />
+                      {/* Glossy left highlight */}
+                      <path
+                        d="M7.6 11.5C7.1 12.7 7.2 14.2 7.8 15.2"
+                        stroke={config.includeTomato ? '#FECACA' : '#D6D3D1'}
+                        strokeWidth="1.6"
+                        strokeLinecap="round"
+                        fill="none"
+                      />
+                      {/* Calyx leaves & stem */}
+                      <path
+                        d="M12 4.2V7.8M12 7.6L8.6 6.4M12 7.6L15.4 6.4M12 7.8L9.5 9.6M12 7.8L14.5 9.6"
+                        stroke={config.includeTomato ? '#65A30D' : '#57534E'}
+                        strokeWidth="1.9"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                    <span className="sr-only">🍅</span>
                   </span>
                 </button>
               </div>
@@ -1069,6 +1229,27 @@ export default function App() {
             )}
           </div>
         </main>
+      )}
+
+      {/* Android-Style Toast Notification for Added / Removed Tomato */}
+      {androidToast && (
+        <div
+          key={androidToast.id}
+          role="status"
+          aria-live="polite"
+          data-testid="android-toast"
+          className="fixed bottom-20 left-1/2 z-50 pointer-events-none anim-android-toast"
+        >
+          <div className="px-4 py-2.5 rounded-full bg-[#303030]/95 dark:bg-[#2B2930]/95 text-[#F5EFE6] border border-white/10 shadow-xl flex items-center gap-2 whitespace-nowrap">
+            <span
+              className="w-2 h-2 rounded-full shrink-0"
+              style={{ backgroundColor: androidToast.included ? '#EF4444' : '#9CA3AF' }}
+            />
+            <span className="text-xs font-semibold tracking-wide">
+              {androidToast.message}
+            </span>
+          </div>
+        </div>
       )}
     </div>
   );
